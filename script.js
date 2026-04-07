@@ -46,24 +46,26 @@ const PROJECTS = [
 
 const HIGHLIGHTS = [
   {
+    emoji: "🎨",
+    label: "'26",
+    content: [
+      { type: "image", src: "images/highlight-26_1.png" },
+      { type: "video", src: "videos/highlight-26_2.mp4" },
+      { type: "video", src: "videos/highlight-26_3.mp4" },
+      { type: "video", src: "videos/highlight-26_4.mp4" },
+      { type: "image", src: "images/highlight-26_5.png" },
+    ]
+  },
+  
+  {
     emoji: "🏙️",
     label: "'25",
-    content: "A year of firsts. New college, new city, new version of me.",
-  },
-  {
-    emoji: "🎨",
-    label: "De-Cocoon-i...",
-    content: "Breaking out — projects, events, and everything in between.",
-  },
-  {
-    emoji: "🌟",
-    label: "🌟 frenz",
-    content: "The people who make it worth it. You know who you are.",
-  },
-  {
-    emoji: "➕",
-    label: "New",
-    content: "More coming soon...",
+    content: [
+      { type: "video", src: "videos/highlight-25_1.mp4" },
+      { type: "video", src: "videos/highlight-25_2.mp4" },
+      { type: "video", src: "videos/highlight-25_3.mp4" },
+      { type: "video", src: "videos/highlight-25_4.mp4" }
+    ]
   },
 ];
 
@@ -142,6 +144,8 @@ function closeOverlay(overlay) {
       chatOptions.classList.remove("open");
     }
   });
+
+
 })();
 
 
@@ -172,31 +176,133 @@ function closeOverlay(overlay) {
   const overlay  = $("#highlightOverlay");
   const closeBtn = $("#closeHighlight");
   const content  = $("#highlightContent");
+
   if (!overlay || !closeBtn || !content) return;
+
+  let currentHighlight = 0;
+  let currentItem = 0;
+
+  function render() {
+    const h = HIGHLIGHTS[currentHighlight];
+    const item = h.content[currentItem];
+
+    let media = "";
+
+    if (item.type === "image") {
+      media = `<img src="${item.src}" class="highlight-media">`;
+    }
+
+    if (item.type === "video") {
+      media = `<video src="${item.src}" class="highlight-media" autoplay muted playsinline></video>`;
+    }
+
+    if (item.type === "text") {
+      media = `<p class="highlight-desc">${item.text}</p>`;
+    }
+
+    content.innerHTML = `
+  <div class="highlight-wrapper">
+
+    <button class="nav-btn left" id="prevStory">‹</button>
+
+    <div class="highlight-viewer-box">
+      <div class="highlight-stage">
+        ${media}
+      </div>
+
+      <div class="highlight-meta">
+        <div class="highlight-caption">
+          ${h.label}
+        </div>
+
+        <div class="highlight-dots">
+          ${h.content.map((_, i) => `
+            <span class="dot ${i === currentItem ? 'active' : ''}"></span>
+          `).join("")}
+        </div>
+      </div>
+    </div>
+
+    <button class="nav-btn right" id="nextStory">›</button>
+
+  </div>
+`;
+
+    // remove video controls
+    const video = content.querySelector("video");
+    if (video) video.controls = false;
+
+    const prevBtn = $("#prevStory");
+    const nextBtn = $("#nextStory");
+
+    prevBtn.onclick = prev;
+    nextBtn.onclick = next;
+
+    // hide buttons at ends
+    if (currentHighlight === 0 && currentItem === 0) {
+      prevBtn.style.visibility = "hidden";
+    } else {
+      prevBtn.style.visibility = "visible";
+    }
+
+    const lastHighlight = HIGHLIGHTS.length - 1;
+    const lastItem = HIGHLIGHTS[lastHighlight].content.length - 1;
+
+    if (currentHighlight === lastHighlight && currentItem === lastItem) {
+      nextBtn.style.visibility = "hidden";
+    } else {
+      nextBtn.style.visibility = "visible";
+    }
+  }
+
+  function next() {
+    const h = HIGHLIGHTS[currentHighlight];
+
+    if (currentItem < h.content.length - 1) {
+      currentItem++;
+    } else if (currentHighlight < HIGHLIGHTS.length - 1) {
+      currentHighlight++;
+      currentItem = 0;
+    }
+
+    render();
+  }
+
+  function prev() {
+    if (currentItem > 0) {
+      currentItem--;
+    } else if (currentHighlight > 0) {
+      currentHighlight--;
+      currentItem = HIGHLIGHTS[currentHighlight].content.length - 1;
+    }
+
+    render();
+  }
 
   items.forEach((item) => {
     item.addEventListener("click", () => {
-      const idx  = parseInt(item.dataset.highlight, 10);
-      const data = HIGHLIGHTS[idx];
-      if (!data) return;
+      currentHighlight = parseInt(item.dataset.highlight, 10);
+      currentItem = 0;
 
-      content.innerHTML = `
-        <div style="text-align:center; padding: 24px;">
-          <div style="font-size:56px; margin-bottom:16px;">${data.emoji}</div>
-          <p style="font-family:'Space Mono',monospace; font-size:13px; color:#a8a8a8; margin-bottom:12px;">${data.label}</p>
-          <p style="font-size:15px; color:#f5f5f5; line-height:1.7; max-width:220px; margin:0 auto;">${data.content}</p>
-        </div>
-      `;
+      render();
       openOverlay(overlay);
     });
   });
 
+  // keyboard navigation
+  document.addEventListener("keydown", (e) => {
+    if (!overlay.classList.contains("open")) return;
+
+    if (e.key === "ArrowRight") next();
+    if (e.key === "ArrowLeft") prev();
+  });
+
   closeBtn.addEventListener("click", () => closeOverlay(overlay));
+
   overlay.addEventListener("click", (e) => {
     if (e.target === overlay) closeOverlay(overlay);
   });
 })();
-
 
 /* ═══════════════════════════════════════════════════════════════
    6. PROJECT CARDS — overlay with prev / next
@@ -347,7 +453,7 @@ document.addEventListener("keydown", (e) => {
   const widget = $("#stickyWidget");
   if (!widget) return;
 
-  widget.addEventListener("click", () => {
+  widget.addEventListener("click", (event) => {
     // Bounce animation
     widget.style.transform = "translateY(-6px) scale(1.04)";
     setTimeout(() => {
@@ -367,11 +473,22 @@ document.addEventListener("keydown", (e) => {
     if (text) {
       text.textContent = "glad you liked it! 🎉";
       setTimeout(() => {
-        text.textContent = "how did you like it?";
+        text.textContent = "like it? lemme know";
       }, 3000);
     }
+    const form = widget.querySelector(".feedback-form");
+
+if (!event.target.closest(".feedback-form")) {
+  if (form) {
+    form.style.display = "block";
+  }
+}
   });
 })();
+
+document.querySelector(".feedback-form").addEventListener("click", function(e) {
+  e.stopPropagation();
+});
 
 
 /* ═══════════════════════════════════════════════════════════════
@@ -415,3 +532,45 @@ document.addEventListener("keydown", (e) => {
     ring.style.transition = "transform 0.4s ease";
   });
 })();
+// Sticky feedback toggle
+const widget = document.getElementById("stickyWidget");
+const trigger = document.getElementById("stickyTrigger");
+
+if (widget && trigger) {
+  trigger.addEventListener("click", () => {
+    if (!widget.classList.contains("active")) {
+      widget.classList.add("active");
+    }
+  });
+}
+if (widget && trigger) {
+  trigger.addEventListener("click", (e) => {
+    if (!widget.classList.contains("active")) {
+      widget.classList.add("active");
+    }
+  });
+}
+const form = document.getElementById("feedbackForm");
+
+if (form) {
+  form.addEventListener("submit", async function (e) {
+    e.preventDefault();
+
+    const data = new FormData(form);
+
+    await fetch(form.action, {
+      method: "POST",
+      body: data,
+      headers: {
+        Accept: "application/json",
+      },
+    });
+
+    // reset form
+    form.reset();
+
+    // optional: collapse widget
+    const widget = document.getElementById("stickyWidget");
+    if (widget) widget.classList.remove("active");
+  });
+}
